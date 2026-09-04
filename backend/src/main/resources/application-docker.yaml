@@ -1,0 +1,10 @@
+# Perfil ativado apenas dentro do container (SPRING_PROFILES_ACTIVE=docker).
+# O host do banco deixa de ser localhost e passa a ser o nome do servico no
+# docker-compose, que a rede interna do Docker resolve por DNS.
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:sgc_db}
+
+logging:
+  level:
+    com.sgc.backend: INFO

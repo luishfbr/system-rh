@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: backend
+
+  # Todo valor sensivel vem de variavel de ambiente, com um default de
+  # desenvolvimento. Assim o projeto sobe sem configuracao na maquina local,
+  # mas em producao nada fica escrito no repositorio.
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sgc_db}
+    username: ${DB_USER:sgc_user}
+    password: ${DB_PASSWORD:sgc_pass}
+
+  jpa:
+    hibernate:
+      # "validate": o Hibernate confere se as entidades batem com o schema, mas
+      # nunca altera tabelas. Quem cria e altera o banco e o Flyway, sempre.
+      ddl-auto: validate
+    # Desligado de proposito: com open-in-view ligado a sessao JPA fica aberta
+    # ate a resposta ser escrita, o que esconde lazy loading acidental nos
+    # controllers e segura conexoes do pool por mais tempo.
+    open-in-view: false
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8090}
+  error:
+    include-message: always
+
+# Configuracoes proprias da aplicacao, lidas por SgcProperties (@ConfigurationProperties).
+sgc:
+  scheduling:
+    # Aplica as alteracoes de carreira programadas (RF10).
+    enabled: ${SCHEDULING_ENABLED:true}
+    # Todo dia as 00:05, apos a virada do dia.
+    apply-changes-cron: ${APPLY_CHANGES_CRON:0 5 0 * * *}
+  jwt:
+    # HS256 exige uma chave de no minimo 256 bits (32 bytes).
+    # Gere a de producao com: openssl rand -base64 48
+    secret: ${JWT_SECRET:dev-only-secret-change-me-in-production-min-32-bytes-long!!}
+    # Formato ISO-8601 de duracao: PT8H = 8 horas, PT30M = 30 minutos.
+    expiration: ${JWT_EXPIRATION:PT8H}
+    issuer: sgc-backend
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.sgc.backend: ${LOG_LEVEL_APP:DEBUG}
+    org.flywaydb: INFO

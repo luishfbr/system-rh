@@ -1,0 +1,26 @@
+# Perfil dos testes automatizados.
+# O datasource NAO aparece aqui de proposito: quem o fornece e o
+# @ServiceConnection do container em TestcontainersConfig.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+
+sgc:
+  # Job do RF10 desligado nos testes: se ele disparasse no meio de um caso,
+  # aplicaria alteracoes que o teste espera encontrar pendentes.
+  scheduling:
+    enabled: false
+  jwt:
+    secret: test-only-secret-with-at-least-32-bytes-for-hs256-signing
+    expiration: PT1H
+    issuer: sgc-backend-test
+
+logging:
+  level:
+    com.sgc.backend: INFO
+    org.testcontainers: WARN
+    org.springframework.test: WARN
