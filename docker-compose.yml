@@ -1,0 +1,71 @@
+# Uso no dia a dia (backend rodando pela IDE):
+#   docker compose up -d              -> sobe apenas postgres + pgadmin
+#
+# Ambiente completo containerizado:
+#   docker compose --profile full up -d --build
+#
+# Os valores ${VAR:-default} vem do .env (opcional). Sem .env, os defaults
+# abaixo fazem o projeto subir sem nenhuma configuracao previa.
+services:
+  postgres:
+    image: postgres:16
+    container_name: sgc-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sgc_db}
+      POSTGRES_USER: ${DB_USER:-sgc_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sgc_pass}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # O healthcheck e o que permite ao backend usar "condition: service_healthy".
+    # Sem ele, o container do Postgres e considerado pronto assim que o processo
+    # inicia -- bem antes de o banco aceitar conexoes -- e o backend quebra no boot.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sgc_user} -d ${DB_NAME:-sgc_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: sgc-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@sgc.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "${PGADMIN_PORT:-8080}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sgc-backend
+    # Fica fora do "docker compose up" padrao: no desenvolvimento normal voce
+    # roda a aplicacao pela IDE e so precisa do banco no Docker.
+    profiles: ["full"]
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-sgc_db}
+      DB_USER: ${DB_USER:-sgc_user}
+      DB_PASSWORD: ${DB_PASSWORD:-sgc_pass}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-min-32-bytes-long!!}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-PT8H}
+    ports:
+      - "${SERVER_PORT:-8090}:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  pgadmin_data:

@@ -1,0 +1,20 @@
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Variaveis de ambiente (nunca versionar segredos)
+.env
+.env.local
+
+# Build
+target/
+build/
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
